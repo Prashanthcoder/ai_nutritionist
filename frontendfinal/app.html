@@ -756,33 +756,191 @@
             fetchTodayMeals();
         };
         /* ---------- SEARCH ---------- */
-        const searchBox = document.getElementById('foodSearch');
-        const autoBox = document.getElementById('autoBox');
-        let searchTimer;
+        /* ---------- NUTRITION APP  (modular) ---------- */
+        const NutritionApp = (() => {
+            /* ---------- CONFIG ---------- */
+            const API_BASE = "http://localhost:8000";
+            const DEBOUNCE_MS = 350;
 
-        searchBox.addEventListener('input', () => {
-            clearTimeout(searchTimer);
-            const q = searchBox.value.trim();
-            if (!q) return autoBox.style.display = 'none';
-            searchTimer = setTimeout(async () => {
-                const res = await fetch(`http://localhost:8000/foods?query=${q}`);
-                const list = await res.json();
-                autoBox.innerHTML = '';
-                list.forEach(item => {
+            /* ---------- SAFE DOM ---------- */
+            const $ = id => document.getElementById(id);
+
+            /* ---------- STATE ---------- */
+            let selectedFood = null;          // selected food object
+            let searchTimer = null;          // debounce timer
+            let currentCat = window.currentCat || 'breakfast'; // category (global fallback)
+
+            /* ---------- CACHE ELEMENTS ---------- */
+            function cacheElements() {
+                return {
+                    searchInput: $('foodSearch'),
+                    autoBox: $('autoBox'),
+                    gramsInput: $('grams'),
+                    resultMsg: $('mealRes'),
+                    todayList: $('todayMeals'),
+                    addBtn: $('addMealBtn'),
+                };
+            }
+
+            /* ---------- INIT ---------- */
+            function init() {
+                const el = cacheElements();
+                attachEvents(el);
+                fetchTodayMeals();               // initial load
+            }
+
+            function attachEvents(el) {
+                /* search */
+                el.searchInput.addEventListener('input', () => debounce(() => searchFood(el), DEBOUNCE_MS));
+                el.searchInput.addEventListener('keydown', e => handleSearchKeys(e, el));
+
+                /* hide dropdown on outside click */
+                document.addEventListener('click', e => {
+                    if (!e.target.closest('.searchBox')) el.autoBox.style.display = 'none';
+                });
+
+                /* add meal */
+                el.addBtn?.addEventListener('click', () => addMeal(el));
+            }
+
+            /* ---------- SEARCH  (debounced + safe) ---------- */
+            async function searchFood(el) {
+                const q = el.searchInput.value.trim();
+                if (!q) return hideDropdown(el);
+
+                try {
+                    const res = await fetch(`${API_BASE}/foods?query=${encodeURIComponent(q)}`);
+                    if (!res.ok) throw new Error(res.statusText);
+                    const data = await res.json();
+                    renderDropdown(data.data || [], el);
+                } catch (err) {
+                    console.error(err);
+                    renderDropdown([], el);                 // silent fail
+                }
+            }
+
+            function renderDropdown(items, el) {
+                const box = el.autoBox;
+                box.innerHTML = '';
+                if (!items.length) return hideDropdown(el);
+
+                items.forEach((item, idx) => {
                     const div = document.createElement('div');
                     div.textContent = `${item.name} (${item.calories} kcal/100g)`;
-                    div.onclick = () => selectFood(item);
-                    autoBox.appendChild(div);
+                    div.dataset.food = JSON.stringify(item);
+                    div.tabIndex = 0;
+                    div.addEventListener('click', () => selectItem(item, el));
+                    box.appendChild(div);
                 });
-                autoBox.style.display = list.length ? 'block' : 'none';
-            }, 300);
-        });
+                box.style.display = 'block';
+            }
 
-        function selectFood(item) {
-            searchBox.value = item.name;
-            autoBox.style.display = 'none';
-            window.selectedFood = item;   // global for addMeal()
-        }
+            function hideDropdown(el) {
+                el.autoBox.style.display = 'none';
+            }
+
+            function selectItem(item, el) {
+                selectedFood = item;
+                el.searchInput.value = item.name;
+                hideDropdown(el);
+            }
+
+            function handleSearchKeys(e, el) {
+                if (e.key === 'Escape') return hideDropdown(el);
+                if (e.key === 'Enter') {
+                    const first = el.autoBox.querySelector('div');
+                    if (first) selectItem(JSON.parse(first.dataset.food), el);
+                }
+            }
+
+            function debounce(fn, ms) {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(fn, ms);
+            }
+
+            /* ---------- ADD MEAL  (validated + safe) ---------- */
+            async function addMeal(el) {
+                if (!selectedFood || !selectedFood.id) return showResult('Choose a food from the search first', 'error', el);
+                const grams = Number(el.gramsInput.value);
+                if (!grams || grams <= 0) return showResult('Enter a valid gram amount (>0)', 'error', el);
+
+                const payload = {
+                    user_id: localStorage.getItem('user_id') || 'anon',
+                    food_id: selectedFood.id,
+                    weight: grams
+                };
+
+                try {
+                    const res = await fetch(`${API_BASE}/log-meal`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error((await res.json()).detail || 'Log failed');
+
+                    showResult('✅ Meal logged', 'success', el);
+                    el.gramsInput.value = '';
+                    selectedFood = null;
+                    el.searchInput.value = '';
+                    await fetchTodayMeals();                 // refresh
+                } catch (err) {
+                    console.error(err);
+                    showResult('⚠️ Could not log meal – ' + err.message, 'error', el);
+                }
+            }
+
+            function showResult(msg, type, el) {
+                const box = el.resultMsg;
+                box.textContent = msg;
+                box.style.color = type === 'error' ? '#f56565' : '#48bb78';
+                setTimeout(() => box.textContent = '', 4000);
+            }
+
+            /* ---------- TODAY MEALS  (fast fragment) ---------- */
+            async function fetchTodayMeals() {
+                try {
+                    const res = await fetch(`${API_BASE}/meal/today?user_id=anon`);
+                    if (!res.ok) throw new Error(res.statusText);
+                    const data = await res.json();
+                    const meals = data.data || [];
+                    renderTodayMeals(meals);
+                    updateDashboard(meals);
+                } catch (err) {
+                    console.error(err);
+                    const ul = document.getElementById('todayMeals');
+                    ul.innerHTML = '<li style="color:#9ca3af">Could not load meals</li>';
+                }
+            }
+
+            function renderTodayMeals(meals) {
+                const ul = document.getElementById('todayMeals');
+                ul.innerHTML = '';
+                if (!meals.length) {
+                    ul.innerHTML = '<li style="color:#9ca3af">No meals logged yet</li>';
+                    return;
+                }
+                const frag = document.createDocumentFragment();
+                meals.forEach(m => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<b>${m.food}</b> (${m.grams}g) – ${m.calories} kcal
+        <small style="color:#9ca3af">P:${m.macros.protein} C:${m.macros.carbs} F:${m.macros.fats}</small>`;
+                    frag.appendChild(li);
+                });
+                ul.appendChild(frag);
+            }
+
+            function updateDashboard(meals) {
+                const total = meals.reduce((t, m) => t + m.calories, 0);
+                // call your existing ring / macro bar updater here
+                if (window.updateDashboardRing) window.updateDashboardRing(total, meals);
+            }
+
+            /* ---------- PUBLIC ---------- */
+            return { init, fetchTodayMeals };
+        })();
+
+        /* ---------- BOOT ---------- */
+        document.addEventListener('DOMContentLoaded', NutritionApp.init);
     </script>
 </body>
 
