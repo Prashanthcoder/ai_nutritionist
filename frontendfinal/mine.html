@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AI Nutritionist – Eat Smarter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        /* ===== heading alignment fix ===== */
+        #how h2.reveal,
+        #demo h2.reveal,
+        #metrics h2.reveal {
+            width: 100%;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        #how .how-grid,
+        #demo .demo-drop,
+        #metrics .metric-cards {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            position: relative;
+            overflow: hidden;
+            transform: translateY(0);
+            transition: transform .4s cubic-bezier(.17, .67, .29, .98),
+                box-shadow .4s ease;
+        }
+
+        .card::before {
+            /* glossy spot */
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%),
+                    rgba(255, 255, 255, .25) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity .5s ease;
+            pointer-events: none;
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(0, 245, 160, .35);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        :root {
+            --accent: #00f5a0;
+            --accent2: #00d9f5;
+            --bg: #0d1117;
+            --surface: #161b22;
+            --glass: rgba(255, 255, 255, .06);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: 'Inter', system-ui, sans-serif
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            overflow-x: hidden;
+            scroll-behavior: smooth
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px
+        }
+
+        /* ---------- NAV ---------- */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 6vw;
+            z-index: 100;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            animation: slideDown .8s ease both;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%)
+            }
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 22px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        .cta {
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border: none;
+            padding: 10px 22px;
+            border-radius: 999px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: .3s
+        }
+
+        .cta:hover {
+            transform: scale(1.06)
+        }
+
+        /* ---------- SECTIONS ---------- */
+        section {
+            position: relative;
+            width: 100vw;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6vw;
+        }
+
+        .hero-content {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center
+        }
+
+        h1 {
+            font-size: clamp(2.4rem, 5vw, 4rem);
+            line-height: 1.2
+        }
+
+        p {
+            font-size: clamp(1rem, 1.4vw, 1.2rem);
+            color: #c9d1d9;
+            margin: 20px 0 30px
+        }
+
+        .hero-img {
+            width: 100%;
+            height: 420px;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 25px 70px rgba(0, 245, 160, .18);
+            transform: perspective(1000px) rotateY(-8deg)
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover
+        }
+
+        /* ---------- CARDS ---------- */
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 28px;
+            margin-top: 50px
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 20px;
+            padding: 28px;
+            position: relative;
+            overflow: hidden;
+            transition: .4s;
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        .card.visible {
+            opacity: 1;
+            transform: none
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02)
+        }
+
+        .card img {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 14px
+        }
+
+        .card h4 {
+            margin: 12px 0 6px;
+            font-size: 1.1rem
+        }
+
+        .card p {
+            font-size: .95rem;
+            color: #8b949e
+        }
+
+        /* ---------- FOOTER ---------- */
+        footer {
+            text-align: center;
+            padding: 30px 6vw;
+            font-size: .9rem;
+            color: #8b949e
+        }
+
+        /* ---------- ANIMATIONS ---------- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(60px);
+            transition: all .8s ease
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: none
+        }
+
+        @media(max-width:900px) {
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center
+            }
+
+            .hero-img {
+                height: 280px;
+                transform: none
+            }
+        }
+
+        /* ===== PASTE 1: hover-reveal gloss ===== */
+        .card {
+            position: relative;
+            overflow: hidden
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, .25) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity .5s ease;
+            pointer-events: none
+        }
+
+        .card:hover::before {
+            opacity: 1
+        }
+
+        /* ===== how-it-works cards ===== */
+        .how-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 30px;
+            margin-top: 40px
+        }
+
+        .how-card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 20px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: .4s;
+            cursor: pointer
+        }
+
+        .how-img {
+            width: 100%;
+            height: 160px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 16px
+        }
+
+        .how-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform .4s
+        }
+
+        .how-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(0, 245, 160, .25)
+        }
+
+        .how-card:hover .how-img img {
+            transform: scale(1.08)
+        }
+
+        .how-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, .25) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity .5s ease;
+            pointer-events: none
+        }
+
+        .how-card:hover::before {
+            opacity: 1
+        }
+
+        .how-card h4 {
+            margin: 12px 0 6px;
+            font-size: 1.1rem
+        }
+
+        .how-card p {
+            color: #8b949e;
+            font-size: .95rem
+        }
+
+        /* ===== demo drop showcase ===== */
+        #demo {
+            background: linear-gradient(180deg, var(--bg) 0%, rgba(13, 17, 23, .8) 100%);
+            padding: 12vh 6vw
+        }
+
+        .demo-drop {
+            background: var(--surface);
+            border: 2px dashed rgba(0, 245, 160, .35);
+            border-radius: 24px;
+            padding: 60px 30px;
+            max-width: 640px;
+            margin: auto;
+            transition: .4s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden
+        }
+
+        .demo-drop::before {
+            content: '';
+            position: absolute;
+            inset: -100%;
+            background: conic-gradient(from 0deg, transparent, var(--accent), transparent 30%);
+            animation: rotate 6s linear infinite;
+            opacity: 0;
+            transition: opacity .4s
+        }
+
+        .demo-drop:hover::before {
+            opacity: .25
+        }
+
+        .demo-drop:hover {
+            transform: scale(1.02);
+            box-shadow: 0 25px 50px -15px rgba(0, 245, 160, .2)
+        }
+
+        .demo-result {
+            margin-top: 20px;
+            font-size: 1.1rem;
+            color: var(--accent);
+            min-height: 28px;
+            font-weight: 600
+        }
+
+        @keyframes rotate {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        /* ===== metric cards ===== */
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 20px;
+            padding: 30px 20px;
+            transition: .4s;
+            position: relative;
+            overflow: hidden
+        }
+
+        .metric-card:hover {
+            transform: translateY(-6px) scale(1.03);
+            box-shadow: 0 20px 40px -10px rgba(0, 245, 160, .25)
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255, 255, 255, .2) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity .5s ease;
+            pointer-events: none
+        }
+
+        .metric-card:hover::before {
+            opacity: 1
+        }
+
+        .metric-icon {
+            font-size: 2.2rem;
+            margin-bottom: 10px
+        }
+
+        .metric-val {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1
+        }
+
+        .metric-val span {
+            font-size: 1.4rem
+        }
+
+        .metric-label {
+            color: #8b949e;
+            font-size: .95rem;
+            margin-top: 6px
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- ==========  NAV  ========== -->
+    <nav>
+        <div class="logo">AI Nutritionist</div>
+        <button class="cta" onclick="location.href='app.html'">Launch App</button>
+    </nav>
+
+    <!-- ==========  HERO  ========== -->
+    <section id="slide1">
+        <div class="hero-content">
+            <div class="reveal">
+                <h1>Eat Smarter<br>With AI Power</h1>
+                <p>Instantly analyse calories, macros and portion sizes from a single photo.</p>
+                <button class="cta">Get Started</button>
+            </div>
+            <div class="hero-img reveal">
+                <video id="bgVid" muted loop>
+                    <source src="src/on.mp4" type="video/mp4">
+                </video>
+            </div>
+        </div>
+    </section>
+    <!-- PASTE 2: neon particles canvas -->
+    <canvas id="neCanvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none"></canvas>
+
+    <!-- ==========  FEATURES  ========== -->
+    <section id="slide2">
+        <div style="max-width:1200px">
+            <h2 class="reveal">How it helps you</h2>
+            <div class="cards">
+                <div class="card reveal"><img src="https://images.unsplash.com/photo-1546069901-eacef0df6022 "
+                        loading="lazy">
+                    <h4>AI Food Detection</h4>
+                    <p>Computer vision recognises every item on your plate.</p>
+                </div>
+                <div class="card reveal"><img src="https://images.unsplash.com/photo-1498837167922-ddd27525d352 "
+                        loading="lazy">
+                    <h4>Smart Calorie Estimation</h4>
+                    <p>Get calories & macros in under a second.</p>
+                </div>
+                <div class="card reveal"><img src="https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2 "
+                        loading="lazy">
+                    <h4>Portion Size AI</h4>
+                    <p>Density-based models predict weight without a scale.</p>
+                </div>
+                <div class="card reveal"><img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136 "
+                        loading="lazy">
+                    <h4>Daily Health Tracking</h4>
+                    <p>Visualise trends and reach your goals faster.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- PASTE 3: how-it-works section -->
+    <!-- ===== HOW IT WORKS (visual cards) ===== -->
+    <section id="how" style="padding:10vh 6vw;text-align:center">
+        <h2 class="reveal" style="margin-bottom:50px;font-size:clamp(2rem,4vw,3rem)">How AI Nutritionist Works</h2>
+        <div class="how-grid">
+            <div class="how-card reveal">
+                <div class="how-img"><img src="src/download.jpg" alt="Snap"></div>
+                <h4>1. Snap</h4>
+                <p>Point & shoot – no angles to perfect.</p>
+            </div>
+
+            <div class="how-card reveal">
+                <div class="how-img"><img src="src/analyze.jfif" alt="Analyse"></div>
+                <h4>2. Analyse</h4>
+                <p>Neural net IDs every item & portion.</p>
+            </div>
+            <div class="how-card reveal">
+                <div class="how-img"><img src="src/track.png" alt="Track"></div>
+                <h4>3. Track</h4>
+                <p>One-tap log with full macro breakdown.</p>
+            </div>
+        </div>
+    </section>
+    <!-- PASTE 4: demo drop zone -->
+    <section id="demo" style="padding:10vh 6vw;text-align:center">
+        <h2 class="reveal" style="margin-bottom:40px">Try a Quick Demo</h2>
+        <div class="demo-drop" id="demoDrop">
+            <i class="fas fa-cloud-upload-alt" style="font-size:2.5rem;color:var(--accent);margin-bottom:15px"></i>
+            <p>Drop any food pic here – AI will mock-analyse it in &lt; 1 s</p>
+            <input type="file" id="demoInput" accept="image/*" hidden>
+            <div class="demo-result" id="demoResult"></div>
+        </div>
+    </section>
+    <!-- ===== AI METRICS SHOWCASE ===== -->
+    <section id="metrics" style="padding:10vh 6vw;text-align:center">
+        <h2 class="reveal" style="margin-bottom:40px">Built for Precision</h2>
+        <div class="metric-cards">
+            <div class="metric-card reveal">
+                <div class="metric-icon">🎯</div>
+                <div class="metric-val">97.3<span>%</span></div>
+                <div class="metric-label">Food ID Accuracy</div>
+            </div>
+            <div class="metric-card reveal">
+                <div class="metric-icon">⚡</div>
+                <div class="metric-val">
+                    < 1</span><span>s</span>
+                </div>
+                <div class="metric-label">Avg Analysis Time</div>
+            </div>
+            <div class="metric-card reveal">
+                <div class="metric-icon">🌍</div>
+                <div class="metric-val">50<span>k+</span></div>
+                <div class="metric-label">Meals Logged</div>
+            </div>
+        </div>
+    </section>
+    <!-- PASTE 5: stats ticker -->
+
+
+    <!-- ==========  FOOTER  ========== -->
+    <footer
+        style="position:relative;text-align:center;padding:40px 6vw 30px;font-size:.9rem;color:#8b949e;border-top:1px solid rgba(255,255,255,.08);margin-top:10vh">
+        <!-- PASTE 6: footer icons -->
+        <div class="foot-icons">
+            <a aria-label="GitHub"><i class="fab fa-github"></i></a>
+            <a aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+            <a aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+        </div>
+        AI Nutritionist – College Project 2025
+    </footer>
+
+    <!-- ==========  SCROLL MAGIC  ========== -->
+    <script>
+        /* video scrub */
+        const vid = document.getElementById('bgVid');
+        vid.playbackRate = 0.5;
+        window.addEventListener('scroll', () => {
+            const max = document.body.scrollHeight - window.innerHeight;
+            const percent = scrollY / max;
+            vid.currentTime = percent * vid.duration;
+        });
+
+        /* intersection observer for reveals */
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') });
+        }, { threshold: .25 });
+        document.querySelectorAll('.reveal, .card').forEach(el => obs.observe(el));
+
+        /* ===== PASTE 7: mouse-follow gloss ===== */
+        document.querySelectorAll('.card').forEach(c => {
+            c.addEventListener('mousemove', e => {
+                const r = c.getBoundingClientRect();
+                c.style.setProperty('--x', `${((e.clientX - r.left) / r.width) * 100}%`);
+                c.style.setProperty('--y', `${((e.clientY - r.top) / r.height) * 100}%`);
+            });
+        });
+
+        /* ===== PASTE 8: neon particles ===== */
+        {
+            const c = document.getElementById('neCanvas'), ctx = c.getContext('2d'); let w = c.width = innerWidth, h = c.height = innerHeight;
+            addEventListener('resize', () => { w = c.width = innerWidth; h = c.height = innerHeight });
+            const p = Array.from({ length: 80 }, () => ({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.5 + 1, sp: Math.random() * .5 + .2, op: Math.random() * .5 + .3 }));
+            function animate() { ctx.clearRect(0, 0, w, h); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent'); p.forEach(i => { i.y += i.sp; if (i.y > h) i.y = 0; ctx.globalAlpha = i.op; ctx.beginPath(); ctx.arc(i.x, i.y, i.r, 0, Math.PI * 2); ctx.fill() }); requestAnimationFrame(animate) } animate();
+        }
+
+        /* ===== PASTE 9: demo fake analyser ===== */
+        const demoDrop = document.getElementById('demoDrop');
+        const demoInput = document.getElementById('demoInput');
+        const demoResult = document.getElementById('demoResult');
+        demoDrop.addEventListener('click', () => demoInput.click());
+        demoInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+            demoResult.textContent = 'Analysing...';
+            setTimeout(() => {
+                demoResult.innerHTML = `<b>Detected:</b> Pizza slice ~ 285 kcal &nbsp;&nbsp;🍕`;
+            }, 800);
+        });
+
+        /* ===== PASTE 10: stats count-up ===== */
+        const statObs = new IntersectionObserver((entries) => {
+            entries.forEach(en => {
+                if (en.isIntersecting) {
+                    const num = en.target;
+                    const tgt = +num.dataset.target;
+                    let cur = 0; const inc = tgt / 60;
+                    const tick = () => { cur += inc; if (cur < tgt) { num.textContent = cur.toFixed(1); requestAnimationFrame(tick) } else num.textContent = tgt };
+                    tick(); statObs.unobserve(num);
+                }
+            });
+        }, { threshold: .8 });
+        document.querySelectorAll('.stat-num').forEach(n => statObs.observe(n));
+        /* glossy follow for how-cards */
+        document.querySelectorAll('.how-card').forEach(c => {
+            c.addEventListener('mousemove', e => {
+                const r = c.getBoundingClientRect();
+                c.style.setProperty('--x', `${((e.clientX - r.left) / r.width) * 100}%`);
+                c.style.setProperty('--y', `${((e.clientY - r.top) / r.height) * 100}%`);
+            });
+        });
+        /* glossy follow for metric & demo */
+        document.querySelectorAll('.metric-card, .demo-drop').forEach(el => {
+            el.addEventListener('mousemove', e => {
+                const r = el.getBoundingClientRect();
+                el.style.setProperty('--x', `${((e.clientX - r.left) / r.width) * 100}%`);
+                el.style.setProperty('--y', `${((e.clientY - r.top) / r.height) * 100}%`);
+            });
+        });
+    </script>
+</body>
+
+</html>

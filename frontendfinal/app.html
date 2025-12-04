@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>AI Nutritionist Dashboard</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css ">
+    <style>
+        :root {
+            --accent: #7c3aed;
+            --accent2: #22d3ee;
+            --bg: #020617;
+            --surface: #0f172a;
+            --glass: rgba(255, 255, 255, .05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: 'Inter', system-ui, sans-serif
+        }
+
+        body {
+            background: var(--bg);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            height: 100vh
+        }
+
+        a {
+            color: #9ca3af;
+            text-decoration: none;
+            cursor: pointer;
+            transition: .2s
+        }
+
+        a:hover {
+            color: var(--accent2)
+        }
+
+        /* ---------- NAV ---------- */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 40px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            animation: fadeDown .6s ease both;
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px)
+            }
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: 800;
+            color: #000
+        }
+
+        .menu a {
+            margin-left: 24px;
+            font-weight: 600;
+            color: #000
+        }
+
+        /* ---------- LAYOUT ---------- */
+        .wrapper {
+            display: flex;
+            flex: 1;
+            overflow: hidden
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--surface);
+            padding: 30px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            animation: slideLeft .7s ease both;
+        }
+
+        @keyframes slideLeft {
+            from {
+                transform: translateX(-100%)
+            }
+        }
+
+        .avatar {
+            width: 90px;
+            height: 90px;
+            margin: auto;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 32px;
+        }
+
+        .goalBox {
+            background: var(--glass);
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 14px
+        }
+
+        .content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto
+        }
+
+        .section {
+            animation: fade .5s ease
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(10px)
+            }
+        }
+
+        .hidden {
+            display: none
+        }
+
+        /* ---------- CARDS ---------- */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px
+        }
+
+        .stat {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+            transition: .3s;
+            opacity: 0;
+            transform: scale(.9);
+        }
+
+        .stat.show {
+            opacity: 1;
+            transform: none
+        }
+
+        .stat h2 {
+            margin: 8px 0;
+            font-size: 26px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        .card {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: .3s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px)
+        }
+
+        .progress {
+            height: 8px;
+            background: #1f2937;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 6px
+        }
+
+        .bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            width: 0%;
+            transition: width 1s ease
+        }
+
+        .scanner {
+            border: 2px dashed var(--accent2);
+            border-radius: 20px;
+            padding: 50px;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            50% {
+                border-color: var(--accent)
+            }
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            margin-top: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            background: #020617;
+            color: #fff
+        }
+
+        button {
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            color: #000;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+        img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin-top: 14px
+        }
+
+        /* ---------- NEW ---------- */
+        /* big circle progress */
+        .ringBox {
+            display: grid;
+            place-items: center;
+            margin: 20px auto;
+            position: relative;
+            width: 200px;
+            height: 200px
+        }
+
+        .ring {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent2) 0deg, var(--surface) 0deg);
+            display: grid;
+            place-items: center;
+            position: relative;
+            animation: ringFill 1.5s ease both
+        }
+
+        @keyframes ringFill {
+            from {
+                background: conic-gradient(var(--accent2) 0deg, var(--surface) 0deg)
+            }
+        }
+
+        .ring::before {
+            content: '';
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            background: var(--bg);
+            border-radius: 50%
+        }
+
+        .ringText {
+            position: relative;
+            text-align: center
+        }
+
+        .ringText .num {
+            font-size: 38px;
+            font-weight: 700;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        .ringText .label {
+            font-size: 12px;
+            color: #9ca3af
+        }
+
+        /* meal category tabs */
+        .catTabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px
+        }
+
+        .catTab {
+            flex: 1;
+            padding: 10px;
+            border-radius: 12px;
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, .08);
+            cursor: pointer;
+            transition: .3s;
+            text-align: center;
+            font-weight: 600
+        }
+
+        .catTab.active {
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            color: #000
+        }
+
+        /* search + autocomplete */
+        .searchBox {
+            position: relative
+        }
+
+        .autoComplete {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none
+        }
+
+        .autoComplete div {
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: .2s
+        }
+
+        .autoComplete div:hover {
+            background: var(--accent);
+            color: #000
+        }
+
+        /* tiny macro bars */
+        .macroBars {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px
+        }
+
+        .macroBar {
+            flex: 1;
+            height: 6px;
+            background: #1f2937;
+            border-radius: 999px;
+            overflow: hidden
+        }
+
+        .macroBar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            width: 0%;
+            transition: width 1s ease
+        }
+
+        /* AI insight card */
+        .aiInsight {
+            background: rgba(34, 211, 238, .07);
+            border: 1px solid rgba(34, 211, 238, .3);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px
+        }
+
+        .aiInsight h4 {
+            margin-bottom: 8px;
+            color: var(--accent2)
+        }
+
+        /* ===== search icon + dropdown ===== */
+        .searchBox {
+            position: relative
+        }
+
+        .autoComplete {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none
+        }
+
+        .autoComplete div {
+            padding: 10px 14px;
+            cursor: pointer;
+            transition: .2s
+        }
+
+        .autoComplete div:hover {
+            background: var(--accent);
+            color: #000
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ==========  NAV  ========== -->
+    <div class="navbar">
+        <div class="brand">AI Nutritionist</div>
+        <div class="menu">
+            <a class="active" onclick="show('dash',this)">Dashboard</a>
+            <!-- ADD -->
+            <a onclick="show('logmeal',this)">Log Meal</a>
+            <a onclick="show('scan',this)">Scanner</a>
+            <a onclick="show('profile',this)">Profile</a>
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <!-- ==========  SIDEBAR  ========== -->
+        <aside class="sidebar">
+            <div class="avatar">U</div>
+            <h3 id="sName" align="center">User</h3>
+            <p id="sGoal" align="center" style="color:#9ca3af">Goal</p>
+            <div id="sData" class="goalBox">No data yet</div>
+        </aside>
+
+        <!-- ==========  CONTENT  ========== -->
+        <main class="content">
+            <!-- dashboard -->
+            <div id="dash" class="section">
+                <!-- ADD : big circle progress -->
+                <div class="card">
+                    <h3>Remaining Calories</h3>
+                    <div class="ringBox">
+                        <div class="ring" id="calRing">
+                            <div class="ringText">
+                                <div class="num" id="remCal">--</div>
+                                <div class="label">left</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;justify-content:space-around;margin-top:10px;font-size:13px;color:#9ca3af">
+                        <span>Base Goal: <b id="baseGoal">--</b></span>
+                        <span>Food: <b id="foodCal">--</b></span>
+                        <span>Exercise: <b id="exerCal">--</b></span>
+                    </div>
+                    <!-- ADD : macro bars -->
+                    <div class="macroBars">
+                        <div><small>Protein</small>
+                            <div class="macroBar">
+                                <div class="fill" id="pBar"></div>
+                            </div>
+                        </div>
+                        <div><small>Carbs</small>
+                            <div class="macroBar">
+                                <div class="fill" id="cBar"></div>
+                            </div>
+                        </div>
+                        <div><small>Fats</small>
+                            <div class="macroBar">
+                                <div class="fill" id="fBar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Daily Calories Progress</h3>
+                    <div class="progress">
+                        <div class="bar" id="pCal"></div>
+                    </div>
+                </div>
+                <!-- ADD : AI insight card -->
+                <div class="card aiInsight">
+                    <h4>AI Insight</h4>
+                    <p id="insight">Complete your profile to get personalised advice.</p>
+                </div>
+            </div>
+
+            <!-- ADD : log meal section -->
+            <div id="logmeal" class="section hidden">
+                <div class="card">
+                    <h3>Log Meal</h3>
+                    <div class="catTabs">
+                        <div class="catTab active" onclick="switchCat('breakfast',this)">Breakfast</div>
+                        <div class="catTab" onclick="switchCat('lunch',this)">Lunch</div>
+                        <div class="catTab" onclick="switchCat('snacks',this)">Snacks</div>
+                        <div class="catTab" onclick="switchCat('dinner',this)">Dinner</div>
+                    </div>
+
+                    <!-- search block -->
+                    <div class="searchBox" style="position:relative;margin-top:12px">
+                        <input id="foodSearch" placeholder="Search food…" autocomplete="off">
+                        <i class="fas fa-search" style="position:absolute;right:12px;top:12px;color:var(--accent2)"></i>
+                        <div class="autoComplete" id="autoBox"></div>
+                    </div>
+
+                    <label>Grams</label>
+                    <input type="number" id="grams" placeholder="e.g. 100" min="1">
+                    <button onclick="addMeal()">Add</button>
+                    <div id="mealRes" style="margin-top:10px;color:var(--accent2)"></div>
+                </div>
+
+                <!-- today meals list -->
+                <div class="card">
+                    <h4>Today's Meals</h4>
+                    <ul id="todayMeals" style="list-style:none;padding:0;margin-top:10px">
+                        <li style="color:#9ca3af">No meals logged yet</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- scanner -->
+            <div id="scan" class="section hidden">
+                <div class="card scanner">
+                    <input type="file" id="img" accept="image/*">
+                    <button onclick="preview()">Analyse Meal</button>
+                    <img id="previewImg" style="margin-top:20px">
+                    <div id="aiResult" class="hidden"
+                        style="margin-top:20px;background:rgba(34,211,238,.07);border:1px solid rgba(34,211,238,.3);padding:16px;border-radius:14px">
+                    </div>
+                </div>
+            </div>
+
+            <!-- profile -->
+            <div id="profile" class="section hidden">
+                <div class="card">
+                    <h3>User Profile</h3>
+                    <label>Name</label><input id="name">
+                    <label>Age</label><input type="number" id="age">
+                    <label>Weight (kg)</label><input type="number" id="weight">
+                    <label>Height (cm)</label><input type="number" id="height">
+                    <label>Gender</label>
+                    <select id="gender">
+                        <option>Male</option>
+                        <option>Female</option>
+                    </select>
+                    <label>Activity</label>
+                    <select id="activityL">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                    <label>Goal</label>
+                    <select id="goalSel">
+                        <option value="weight_loss">Weight Loss</option>
+                        <option value="maintenance">Maintain</option>
+                        <option value="muscle_gain">Muscle Gain</option>
+                    </select>
+                    <button onclick="saveProfile()">Save Profile</button>
+                    <p id="saved" style="margin-top:10px;color:var(--accent2)"></p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==========  JS  ========== -->
+    <script>
+        const els = id => document.getElementById(id);
+        let currentCat = 'breakfast';
+        let todaySummary = { foodCal: 0, protein: 0, carbs: 0, fats: 0 };
+
+        /* ---------- NAV ---------- */
+        function show(id, el) {
+            document.querySelectorAll(".section").forEach(s => s.classList.add("hidden"));
+            els(id).classList.remove("hidden");
+            document.querySelectorAll(".menu a").forEach(a => a.classList.remove("active"));
+            el.classList.add("active");
+            if (id === 'dash') animateStats();
+        }
+        function animateStats() {
+            document.querySelectorAll('.stat').forEach((s, i) => {
+                setTimeout(() => s.classList.add('show'), i * 100)
+            });
+            const bar = els('pCal');
+            setTimeout(() => bar.style.width = bar.dataset.width || '0%', 400);
+        }
+
+        /* ---------- PROFILE ---------- */
+        function saveProfile() {
+            const payload = {
+                age: +els('age').value,
+                height: +els('height').value,
+                weight: +els('weight').value,
+                gender: els('gender').value.toLowerCase(),
+                activity: els('activityL').value,
+                goal: els('goalSel').value
+            };
+            fetch('http://127.0.0.1:8000/nutrition', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json()).then(d => {
+                const user = { name: els('name').value, weight: payload.weight, goal: payload.goal, cal: d.daily_calories, bmr: d.bmr, bmi: d.bmi };
+                localStorage.setItem('user', JSON.stringify(user));
+                els('sName').innerText = user.name;
+                els('sGoal').innerText = user.goal;
+                els('sData').innerHTML = `Weight: ${user.weight} kg<br>Calories: ${user.cal}`;
+                updateDashboardRing(user.cal, 0, 0, 0);
+                els('insight').innerText = d.diet_plan;
+                els('saved').innerText = '✅ AI Nutrition Updated';
+                fetchTodayMeals();
+            });
+        }
+
+        /* ---------- DASHBOARD RING ---------- */
+        function updateDashboardRing(base, food, exer, macros) {
+            const rem = Math.max(0, base - food + exer);
+            const pct = base ? (food / base) * 100 : 0;
+            els('remCal').innerText = rem;
+            els('baseGoal').innerText = base;
+            els('foodCal').innerText = food;
+            els('exerCal').innerText = exer;
+            const ring = els('calRing');
+            ring.style.background = `conic-gradient(var(--accent2) ${pct * 3.6}deg, var(--surface) 0deg)`;
+            els('pCal').dataset.width = Math.min(pct, 100) + '%';
+            els('pCal').style.width = Math.min(pct, 100) + '%';
+            /* macro bars */
+            const m = macros || { protein: 0, carbs: 0, fats: 0 };
+            ['pBar', 'cBar', 'fBar'].forEach((id, i) => {
+                const val = [m.protein, m.carbs, m.fats][i];
+                els(id).style.width = Math.min(val, 100) + '%';
+            });
+        }
+
+        /* ---------- SCANNER + AUTO FILL TO LOG ---------- */
+        function preview() {
+            const file = els('img').files[0]; if (!file) return;
+            els('previewImg').src = URL.createObjectURL(file);
+            const form = new FormData(); form.append('file', file);
+            fetch('http://127.0.0.1:8000/analyze', { method: 'POST', body: form })
+                .then(r => r.json()).then(d => {
+                    const box = els('aiResult'); box.classList.remove('hidden');
+                    box.innerHTML = `<b>${d.food}</b><br>Calories: ${d.calories} kcal<br>${d.tips}`;
+                    /* auto-fill log meal */
+                    show('logmeal', document.querySelector('.menu a[onclick*="logmeal"]'));
+                    els('foodSearch').value = d.food;
+                    searchFood(); // trigger autocomplete
+                });
+        }
+
+        /* ---------- LOG MEAL ---------- */
+        function switchCat(cat, el) {
+            currentCat = cat;
+            document.querySelectorAll('.catTab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+        }
+        let searchTimeout;
+        function searchFood() {
+            clearTimeout(searchTimeout);
+            const q = els('foodSearch').value.trim();
+            if (!q) return els('autoBox').style.display = 'none';
+            searchTimeout = setTimeout(() => {
+                fetch(`http://127.0.0.1:8000/foods?query=${q}`).then(r => r.json()).then(list => {
+                    const box = els('autoBox');
+                    box.innerHTML = '';
+                    list.forEach(item => {
+                        const div = document.createElement('div');
+                        div.innerText = item.name;
+                        div.onclick = () => selectFood(item);
+                        box.appendChild(div);
+                    });
+                    box.style.display = list.length ? 'block' : 'none';
+                });
+            }, 300);
+        }
+        window.selectedFood = null;   // ← initialise once
+        function selectFood(item) {
+            window.selectedFood = item;               // store UUID
+            document.getElementById('foodSearch').value = item.name;
+            document.getElementById('autoBox').style.display = 'none';
+        }
+
+        async function addMeal() {
+            window.selectedFood = { id: "00000000-0000-0000-0000-000000000000", name: "rice", calories: 130 };
+            const grams = +els('grams').value || 0;
+            if (!grams) return els('mealRes').innerText = 'Enter grams';
+
+            const payload = {
+                user_id: localStorage.getItem('user_id') || 'anon',
+                food_id: window.selectedFood.id,   // ← UUID string only
+                weight: grams
+            };
+            console.log('payload', payload);
+            try {
+                const res = await fetch('http://localhost:8000/log-meal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.detail || 'Log failed');
+
+                els('mealRes').innerText = '✅ Meal logged';
+                els('grams').value = '';
+                window.selectedFood = null;
+                els('foodSearch').value = '';
+                fetchTodayMeals();
+            } catch (e) {
+                els('mealRes').innerText = '❌ ' + e.message;
+            }
+        }
+        function fetchTodayMeals() {
+            fetch('http://127.0.0.1:8000/meal/today').then(r => r.json()).then(data => {
+                const ul = els('todayMeals');
+                ul.innerHTML = '';
+                let total = 0, p = 0, c = 0, f = 0;
+                data.meals.forEach(m => {
+                    total += m.calories;
+                    p += m.macros.protein;
+                    c += m.macros.carbs;
+                    f += m.macros.fats;
+                    const li = document.createElement('li');
+                    li.innerHTML = `<b>${m.food}</b> (${m.grams}g) - ${m.calories} kcal <small style="color:#9ca3af">P:${m.macros.protein} C:${m.macros.carbs} F:${m.macros.fats}</small>`;
+                    ul.appendChild(li);
+                });
+                if (!data.meals.length) ul.innerHTML = '<li style="color:#9ca3af">No meals logged yet</li>';
+                const user = JSON.parse(localStorage.getItem('user')) || {};
+                updateDashboardRing(user.cal || 2000, total, 0, { protein: p, carbs: c, fats: f });
+                fetchAIInsight();
+            });
+        }
+        function fetchAIInsight() {
+            fetch('http://127.0.0.1:8000/ai/suggest').then(r => r.json()).then(d => {
+                els('insight').innerText = d.suggestion;
+            });
+        }
+
+        /* ---------- UTILS ---------- */
+        function countUp(el, target) {
+            const node = els(el), start = 0, inc = target / 60; let cur = start;
+            const t = setInterval(() => {
+                cur += inc; node.innerText = Math.round(cur);
+                if (cur >= target) { node.innerText = target; clearInterval(t) }
+            }, 16);
+        }
+
+        window.onload = () => {
+            const u = JSON.parse(localStorage.getItem('user'));
+            if (u) {
+                els('sName').innerText = u.name;
+                els('sGoal').innerText = u.goal;
+                els('sData').innerHTML = `Weight: ${u.weight} kg<br>Calories: ${u.cal}`;
+                updateDashboardRing(u.cal || 2000, 0, 0, { protein: 0, carbs: 0, fats: 0 });
+            }
+            animateStats();
+            fetchTodayMeals();
+        };
+        /* ---------- SEARCH ---------- */
+        const searchBox = document.getElementById('foodSearch');
+        const autoBox = document.getElementById('autoBox');
+        let searchTimer;
+
+        searchBox.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            const q = searchBox.value.trim();
+            if (!q) return autoBox.style.display = 'none';
+            searchTimer = setTimeout(async () => {
+                const res = await fetch(`http://localhost:8000/foods?query=${q}`);
+                const list = await res.json();
+                autoBox.innerHTML = '';
+                list.forEach(item => {
+                    const div = document.createElement('div');
+                    div.textContent = `${item.name} (${item.calories} kcal/100g)`;
+                    div.onclick = () => selectFood(item);
+                    autoBox.appendChild(div);
+                });
+                autoBox.style.display = list.length ? 'block' : 'none';
+            }, 300);
+        });
+
+        function selectFood(item) {
+            searchBox.value = item.name;
+            autoBox.style.display = 'none';
+            window.selectedFood = item;   // global for addMeal()
+        }
+    </script>
+</body>
+
+</html>
